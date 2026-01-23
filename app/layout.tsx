@@ -4,6 +4,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ServiceWorker from "../components/ServiceWorker";
 import { Analytics } from "@vercel/analytics/next";
+import CelebrationOverlay from "../components/CelebrationOverlay";
+
 
 type Props = {
   children: ReactNode;
@@ -18,6 +20,7 @@ export default function RootLayout({ children }: Props) {
       </head>
       <body>
         <ServiceWorker />
+        <CelebrationOverlay />
         
         {/* 🏎️ Load Header Fast */}
         <Suspense fallback={<div className="loading-header">Loading...</div>}>
