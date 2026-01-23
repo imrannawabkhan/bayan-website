@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import NewsBar from './NewsBar';
 
 export default function Home() {
@@ -18,9 +19,13 @@ export default function Home() {
               </h1>
 
               {/* 15 Year Badge */}
-              <img
+              <Image
                 src="/assets/badge.png"
                 alt="15 Year Anniversary Badge"
+                width={320}
+                height={320}
+                priority
+                sizes="(max-width: 768px) 200px, (max-width: 1024px) 280px, 320px"
                 className="w-[200px] md:w-[280px] lg:w-[320px] h-auto max-w-full mb-4 celebration-badge"
               />
 
