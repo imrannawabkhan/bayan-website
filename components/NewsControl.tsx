@@ -24,7 +24,8 @@ export default function NewsControl() {
     excerpt: '',
     content: '',
     images: [] as string[],
-    category: 'announcement'
+    category: 'announcement',
+    date: ''
   });
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
@@ -81,7 +82,8 @@ export default function NewsControl() {
       excerpt: '',
       content: '',
       images: [],
-      category: 'announcement'
+      category: 'announcement',
+      date: ''
     });
     setImageUrlInput('');
     setShowModal(true);
@@ -99,7 +101,8 @@ export default function NewsControl() {
       excerpt: news.excerpt,
       content: news.content,
       images: normalizedImages,
-      category: news.category
+      category: news.category,
+      date: news.date
     });
     setImageUrlInput('');
     setShowModal(true);
@@ -123,7 +126,7 @@ export default function NewsControl() {
         const response = await fetch('/api/news', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, id: editingNews.id, date: editingNews.date })
+          body: JSON.stringify({ ...formData, id: editingNews.id })
         });
         
         if (response.ok) {
@@ -255,26 +258,39 @@ export default function NewsControl() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Category
-                      </label>
-                      <select
-                        value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="announcement">Announcement</option>
-                        <option value="update">Update</option>
-                        <option value="partnership">Partnership</option>
-                        <option value="achievement">Achievement</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="announcement">Announcement</option>
+                      <option value="update">Update</option>
+                      <option value="partnership">Partnership</option>
+                      <option value="achievement">Achievement</option>
+                    </select>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Excerpt
-                      </label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Excerpt
+                    </label>
                       <textarea
                         value={formData.excerpt}
                         onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
