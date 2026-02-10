@@ -8,7 +8,8 @@ interface NewsItem {
   title: string;
   excerpt: string;
   content: string;
-  image: string;
+  image?: string;
+  images?: string[];
   date: string;
   category: string;
 }
@@ -22,9 +23,10 @@ export default function NewsControl() {
     title: '',
     excerpt: '',
     content: '',
-    image: '',
+    images: [] as string[],
     category: 'announcement'
   });
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
   const [hasUnuploadedImage, setHasUnuploadedImage] = useState(false);
 
@@ -45,7 +47,7 @@ export default function NewsControl() {
   };
 
   const handleImageUpload = (uploadedImageLink: string) => {
-    setFormData(prev => ({ ...prev, image: uploadedImageLink }));
+    setFormData(prev => ({ ...prev, images: [...prev.images, uploadedImageLink] }));
   };
 
   const handleImageStatusChange = (status: { hasUnuploadedFile: boolean; isUploading: boolean }) => {
@@ -78,21 +80,28 @@ export default function NewsControl() {
       title: '',
       excerpt: '',
       content: '',
-      image: '',
+      images: [],
       category: 'announcement'
     });
+    setImageUrlInput('');
     setShowModal(true);
   };
 
   const openEditModal = (news: NewsItem) => {
     setEditingNews(news);
+    const normalizedImages = news.images && news.images.length > 0
+      ? news.images
+      : news.image
+        ? [news.image]
+        : [];
     setFormData({
       title: news.title,
       excerpt: news.excerpt,
       content: news.content,
-      image: news.image,
+      images: normalizedImages,
       category: news.category
     });
+    setImageUrlInput('');
     setShowModal(true);
   };
 
@@ -100,7 +109,7 @@ export default function NewsControl() {
     e.preventDefault();
     
     if (hasUnuploadedImage) {
-      alert('Please upload the selected image before submitting.');
+      alert('Please upload the selected image(s) before submitting.');
       return;
     }
 
@@ -177,16 +186,20 @@ export default function NewsControl() {
               <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start">
                   <div className="flex space-x-4">
-                    {item.image && (
-                      <div className="w-20 h-20 relative flex-shrink-0">
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          className="object-cover rounded"
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      const previewImage = item.images && item.images.length > 0 ? item.images[0] : item.image;
+                      if (!previewImage) return null;
+                      return (
+                        <div className="w-20 h-20 relative flex-shrink-0">
+                          <Image
+                            src={previewImage}
+                            alt={item.title}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      );
+                    })()}
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900 text-lg">{item.title}</h3>
                       <p className="text-sm text-gray-500 mt-1">
@@ -275,44 +288,78 @@ export default function NewsControl() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        News Image
+                        News Images
                       </label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                         <FileUploader
                           onFileUpload={handleImageUpload}
                           onFileStatusChange={handleImageStatusChange}
+                          multiple
                         />
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Or enter image URL manually
+                        Add image URL manually
                       </label>
-                      <input
-                        type="url"
-                        value={formData.image}
-                        onChange={(e) => setFormData({...formData, image: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://example.com/image.jpg"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={imageUrlInput}
+                          onChange={(e) => setImageUrlInput(e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/image.jpg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const trimmed = imageUrlInput.trim();
+                            if (!trimmed) return;
+                            setFormData((prev) => ({
+                              ...prev,
+                              images: [...prev.images, trimmed]
+                            }));
+                            setImageUrlInput('');
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
 
-                    {formData.image && (
+                    {formData.images.length > 0 && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Preview
                         </label>
-                        <div className="w-full h-32 relative">
-                          <Image
-                            src={formData.image}
-                            alt="Preview"
-                            fill
-                            className="object-cover rounded-lg"
-                            onError={() => {
-                              console.log('Failed to load preview image');
-                            }}
-                          />
+                        <div className="grid grid-cols-2 gap-2">
+                          {formData.images.map((image, index) => (
+                            <div key={`${image}-${index}`} className="relative w-full h-24">
+                              <Image
+                                src={image}
+                                alt={`Preview ${index + 1}`}
+                                fill
+                                className="object-cover rounded-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    images: prev.images.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                                className="absolute top-1 right-1 bg-white/90 text-gray-700 rounded-full p-1 hover:bg-white shadow"
+                                aria-label="Remove image"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}

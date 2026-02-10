@@ -1,7 +1,55 @@
 import Image from 'next/image';
 import { NewsModalProps } from '@/interfaces';
+import { useEffect, useRef, useState } from 'react';
 
 export default function NewsModal({ news, isOpen, onClose }: NewsModalProps) {
+  const images = news?.images && news.images.length > 0
+    ? news.images
+    : news?.image
+      ? [news.image]
+      : [];
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
+
+  useEffect(() => {
+    if (!news) return;
+    setCurrentImageIndex(0);
+  }, [news?.id, isOpen]);
+
+  const showPrevImage = () => {
+    if (images.length < 2) return;
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const showNextImage = () => {
+    if (images.length < 2) return;
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    touchDeltaX.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null) return;
+    const threshold = 40;
+    if (touchDeltaX.current > threshold) {
+      showPrevImage();
+    } else if (touchDeltaX.current < -threshold) {
+      showNextImage();
+    }
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  };
+
   if (!isOpen || !news) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -62,14 +110,63 @@ export default function NewsModal({ news, isOpen, onClose }: NewsModalProps) {
     >
       <div className="bg-white rounded-lg max-w-4xl max-h-[82vh] overflow-y-auto relative mt-6">
         {/* Header Image */}
-        <div className="relative">
-          <Image
-            src={news.image}
-            alt={news.title}
-            width={800}
-            height={400}
-            className="w-full object-cover"
-          />
+        <div
+          className="relative"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {images.length > 0 ? (
+            <Image
+              src={images[currentImageIndex]}
+              alt={news.title}
+              width={800}
+              height={400}
+              className="w-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <span className="text-sm text-gray-400">No image available</span>
+            </div>
+          )}
+
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={showPrevImage}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-700 rounded-full p-2 shadow hover:bg-white"
+                aria-label="Previous image"
+              >
+                <svg className="w-5 h-5 animate-bounce motion-reduce:animate-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={showNextImage}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-700 rounded-full p-2 shadow hover:bg-white"
+                aria-label="Next image"
+              >
+                <svg className="w-5 h-5 animate-bounce motion-reduce:animate-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                {images.map((_, index) => (
+                  <button
+                    key={`dot-${index}`}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`h-2.5 w-2.5 rounded-full transition-all ${
+                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           
           {/* Close Button */}
           <button

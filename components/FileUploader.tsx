@@ -8,27 +8,26 @@ interface UploadResponse {
   link: string;
 }
 
-export default function FileUploader({ onFileUpload, onFileStatusChange }: FileUploaderProps) {
-  const [file, setFile] = useState<File | null>(null);
+export default function FileUploader({ onFileUpload, onFileStatusChange, multiple = false }: FileUploaderProps) {
+  const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
 
   // Notify parent about file status changes
   useEffect(() => {
     if (onFileStatusChange) {
       onFileStatusChange({
-        hasUnuploadedFile: file !== null && status !== 'success',
+        hasUnuploadedFile: files.length > 0 && status !== 'success',
         isUploading: status === 'uploading'
       });
     }
-  }, [file, status, onFileStatusChange]);
+  }, [files, status, onFileStatusChange]);
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files) {
-      const selectedFile = e.target.files[0];
-
-      // ✅ Allowed file types
+      const selectedFiles = Array.from(e.target.files);
       const allowedTypes = [
         'image/jpeg',
         'image/png',
@@ -37,71 +36,93 @@ export default function FileUploader({ onFileUpload, onFileStatusChange }: FileU
         'application/pdf'
       ];
 
-      if (!allowedTypes.includes(selectedFile.type)) {
-        setFile(null);
+      const validFiles = selectedFiles.filter((file) => allowedTypes.includes(file.type));
+
+      if (validFiles.length === 0) {
+        setFiles([]);
         setStatus('error');
         setErrorMessage('❌ File type not supported. Only JPG, PNG, WEBP, GIF, and PDF are allowed.');
         return;
       }
 
-      setFile(selectedFile);
+      if (validFiles.length < selectedFiles.length) {
+        setErrorMessage('⚠️ Some files were skipped due to unsupported types.');
+      } else {
+        setErrorMessage(null);
+      }
+
+      setFiles(multiple ? validFiles : [validFiles[0]]);
       setStatus('idle');
-      setErrorMessage(null);
+      setCurrentFileIndex(0);
     }
   }
 
-  function handleFileUpload() {
-    if (!file) return;
+  async function handleFileUpload() {
+    if (!files.length) return;
 
     setStatus('uploading');
     setUploadProgress(0);
     setErrorMessage(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      setCurrentFileIndex(index);
+      setUploadProgress(0);
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload', true);
+      const formData = new FormData();
+      formData.append('file', file);
 
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload', true);
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const progress = Math.round((event.loaded * 100) / event.total);
-        setUploadProgress(progress);
-      }
-    };
+      const uploadPromise = new Promise<void>((resolve, reject) => {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded * 100) / event.total);
+            setUploadProgress(progress);
+          }
+        };
 
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        try {
-          const response: UploadResponse = JSON.parse(xhr.responseText);
-          setStatus('success');
-          onFileUpload(response.link);
-        } catch (error) {
-          console.error('Error parsing response:', error);
-          setStatus('error');
-          setErrorMessage('❌ Failed to parse upload response.');
-        }
-      } else {
-        console.error('Upload failed:', xhr.statusText);
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            try {
+              const response: UploadResponse = JSON.parse(xhr.responseText);
+              onFileUpload(response.link);
+              resolve();
+            } catch (error) {
+              console.error('Error parsing response:', error);
+              reject(new Error('❌ Failed to parse upload response.'));
+            }
+          } else {
+            console.error('Upload failed:', xhr.statusText);
+            try {
+              const response = JSON.parse(xhr.responseText);
+              reject(new Error(`❌ ${response.error}`));
+            } catch {
+              reject(new Error('❌ Failed to upload file.'));
+            }
+          }
+        };
+
+        xhr.onerror = function () {
+          console.error('Error uploading file');
+          reject(new Error('❌ Error uploading file.'));
+        };
+
+        xhr.send(formData);
+      });
+
+      try {
+        await uploadPromise;
+      } catch (error) {
         setStatus('error');
-        try {
-          const response = JSON.parse(xhr.responseText);
-          setErrorMessage(`❌ ${response.error}`);
-        } catch {
-          setErrorMessage('❌ Failed to upload file.');
-        }
+        setErrorMessage(error instanceof Error ? error.message : '❌ Failed to upload file.');
+        return;
       }
-    };
+    }
 
-    xhr.onerror = function () {
-      console.error('Error uploading file');
-      setStatus('error');
-      setErrorMessage('❌ Error uploading file.');
-    };
-
-    xhr.send(formData);
+    setStatus('success');
   }
 
   return (
@@ -122,26 +143,29 @@ export default function FileUploader({ onFileUpload, onFileStatusChange }: FileU
             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
           />
         </svg>
-        <span className="text-sm font-medium">Choose file</span>
+        <span className="text-sm font-medium">{multiple ? 'Choose files' : 'Choose file'}</span>
         <input 
           type="file" 
           onChange={handleFileChange} 
-          className="hidden" 
+          className="hidden"
+          multiple={multiple}
         />
       </label>
 
-      {file && (
-        <div className="mb-4 text-sm text-gray-300">
-          <p>
-            {file.name} {(file.size / 1024).toFixed(2)} KB
-          </p>
+      {files.length > 0 && (
+        <div className="mb-4 text-sm text-gray-300 space-y-1">
+          {files.map((file) => (
+            <p key={`${file.name}-${file.size}`}>
+              {file.name} {(file.size / 1024).toFixed(2)} KB
+            </p>
+          ))}
         </div>
       )}
 
       {/* Warning message when file is selected but not uploaded */}
-      {file && status === 'idle' && (
+      {files.length > 0 && status === 'idle' && (
         <div className="p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
-          <p className="text-sm">⚠️ Please upload the selected file before submitting the form.</p>
+          <p className="text-sm">⚠️ Please upload the selected file{files.length > 1 ? 's' : ''} before submitting the form.</p>
         </div>
       )}
 
@@ -155,18 +179,20 @@ export default function FileUploader({ onFileUpload, onFileStatusChange }: FileU
             ></div>
           </div>
           <p className="text-sm text-gray-300 text-center">
-            {uploadProgress}% uploaded
+            {multiple && files.length > 1
+              ? `Uploading ${currentFileIndex + 1} of ${files.length} (${uploadProgress}%)`
+              : `${uploadProgress}% uploaded`}
           </p>
         </div>
       )}
 
       {/* Upload button */}
-      {file && status !== 'uploading' && status !== 'success' && (
+      {files.length > 0 && status !== 'uploading' && status !== 'success' && (
         <button
           onClick={handleFileUpload}
           className="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
-          Upload File
+          {multiple ? 'Upload Files' : 'Upload File'}
         </button>
       )}
 

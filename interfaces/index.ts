@@ -12,6 +12,7 @@ export interface FileUploaderProps {
     hasUnuploadedFile: boolean;
     isUploading: boolean;
   }) => void;
+  multiple?: boolean;
 }
 
 
@@ -21,7 +22,8 @@ export interface NewsItem {
   title: string;
   excerpt: string;
   content: string;
-  image: string;
+  image?: string;
+  images?: string[];
   date: string;
   category: 'announcement' | 'update' | 'partnership' | 'achievement';
 }
