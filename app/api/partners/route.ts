@@ -1,6 +1,8 @@
 // app/api/partners/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // -----------------
 // MongoDB Connection
@@ -73,12 +75,38 @@ export async function GET(req: NextRequest) {
     console.log('Found partners:', partners.length);
 
     return NextResponse.json(partners);
-  } catch (error) {
-    console.error('Error in GET /api/partners:', error);
-    return NextResponse.json({ 
-      error: 'Database error', 
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+  } catch (dbError) {
+    console.error('Database connection failed, falling back to local data file:', dbError);
+    
+    try {
+      // Fallback to local JSON file
+      const filePath = path.join(process.cwd(), 'public', 'partners.json');
+      const fileContents = await fs.readFile(filePath, 'utf8');
+      const partners = JSON.parse(fileContents);
+      
+      const url = new URL(req.url);
+      const id = url.searchParams.get('id');
+      
+      if (id) {
+        const partner = partners.find((p: any) => p.id === parseInt(id));
+        if (!partner) {
+          return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
+        }
+        return NextResponse.json(partner);
+      }
+      
+      // Sort by name
+      partners.sort((a: any, b: any) => a.name.localeCompare(b.name));
+      console.log('Loaded partners from local file:', partners.length);
+      
+      return NextResponse.json(partners);
+    } catch (fileError) {
+      console.error('Error reading local data file:', fileError);
+      return NextResponse.json({ 
+        error: 'Database and local data file both failed', 
+        message: 'Unable to retrieve partner data'
+      }, { status: 500 });
+    }
   }
 }
 

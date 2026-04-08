@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "Aesculap",
+    "link": "https://www.aesculap.com",
+    "brief": "Leading provider of surgical instruments and medical devices.",
+    "logo": "/assets/logos/aesculap.png"
+  },
+  {
+    "id": 2,
+    "name": "Artivion",
+    "link": "https://www.artivion.com",
+    "brief": "Specialized in cardiac and vascular surgery products.",
+    "logo": "/assets/logos/artivion.png"
+  },
+  {
+    "id": 3,
+    "name": "B. Braun",
+    "link": "https://www.bbraun.com",
+    "brief": "Global healthcare company providing medical devices and services.",
+    "logo": "/assets/logos/bbraun.png"
+  },
+  {
+    "id": 4,
+    "name": "GE Healthcare",
+    "link": "https://www.gehealthcare.com",
+    "brief": "Innovative medical technology and digital solutions.",
+    "logo": "/assets/logos/ge.jpeg"
+  },
+  {
+    "id": 5,
+    "name": "Geister",
+    "link": "https://www.geister.com",
+    "brief": "Manufacturer of medical furniture and equipment.",
+    "logo": "/assets/logos/geister.png"
+  },
+  {
+    "id": 6,
+    "name": "Medartis",
+    "link": "https://www.medartis.com",
+    "brief": "Specialized in orthopedic implants and instruments.",
+    "logo": "/assets/logos/medartis.png"
+  },
+  {
+    "id": 7,
+    "name": "Medtronic",
+    "link": "https://www.medtronic.com",
+    "brief": "Global leader in medical technology and therapies.",
+    "logo": "/assets/logos/medtronic.png"
+  },
+  {
+    "id": 8,
+    "name": "Sophysa",
+    "link": "https://www.sophysa.com",
+    "brief": "Provider of neurosurgical and neuromodulation solutions.",
+    "logo": "/assets/logos/sophysa.png"
+  }
+]

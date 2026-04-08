@@ -6,6 +6,9 @@ import ServiceWorker from "../components/ServiceWorker";
 import { Analytics } from "@vercel/analytics/next";
 import CelebrationOverlay from "../components/CelebrationOverlay";
 
+// Import Swiper styles globally
+import "swiper/css/bundle";
+
 
 type Props = {
   children: ReactNode;

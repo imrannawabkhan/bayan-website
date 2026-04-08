@@ -6,11 +6,6 @@ import { Autoplay, FreeMode } from "swiper/modules";
 import PartnerCard from "./Cards";
 import { PartnerProps } from "@/interfaces";
 
-// Import Swiper styles
-import "swiper/css";
-import "swiper/css/autoplay";
-import "swiper/css/free-mode";
-
 export default function Partners() {
   const [partners, setPartners] = useState<PartnerProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
