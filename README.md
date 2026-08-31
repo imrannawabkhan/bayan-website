@@ -52,6 +52,7 @@ EMAIL_USER=
 EMAIL_PASS=
 EMAIL_RECEIVER=
 ```
+
 ### for file upload:
 create account on Cloudinary and use the given info
 ```
